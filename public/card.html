@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>单词管理 - Card</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="cardPage">
+    <header>
+      <div>
+        <div>单词管理（逐个视图）</div>
+        <div class="small">
+          <span class="kbd">A</span>/<span class="kbd">W</span> 上一个，<span class="kbd">D</span>/<span class="kbd">S</span> 下一个，
+          <span class="kbd">J</span> 标记熟知，<span class="kbd">K</span> 标记不会
+        </div>
+        <div id="stats" class="small" style="margin-top: 6px;"></div>
+        <div class="small" style="margin-top: 6px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+          <label style="display: inline-flex; gap: 8px; align-items: center;">
+            <input id="autoAudio" type="checkbox" /> 自动发音
+          </label>
+          <span id="audioTip"></span>
+        </div>
+      </div>
+      <nav>
+        <a href="/table">Table 视图</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="card">
+        <div class="cardPanel">
+          <div class="small pickerLabel">上一个</div>
+          <div id="prev" class="sideWord">—</div>
+        </div>
+
+        <div class="cardPanel centerWord">
+          <div id="word" class="word">—</div>
+          <div id="meaning" class="meaning"></div>
+          <div id="mastered" class="small" style="margin-top: 12px;"></div>
+        </div>
+
+        <div class="cardPanel">
+          <div class="small pickerLabel">下一个</div>
+          <div id="next" class="sideWord">—</div>
+        </div>
+      </div>
+    </main>
+
+    <script src="/app_card.js" type="module"></script>
+  </body>
+</html>

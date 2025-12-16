@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>单词管理 - Table</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <div>单词管理（Table）</div>
+        <div class="small">勾选表示“掌握”，行背景色会变化</div>
+      </div>
+      <nav>
+        <a href="/card">逐个视图</a>
+      </nav>
+    </header>
+
+    <main>
+      <div id="status" class="small">加载中…</div>
+      <div class="tableWrap" style="margin-top: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkboxCell">掌握</th>
+              <th>序号</th>
+              <th>单词</th>
+              <th>释义</th>
+              <th>词频</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <script src="/app_table.js" type="module"></script>
+  </body>
+</html>

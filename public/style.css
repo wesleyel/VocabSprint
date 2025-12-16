@@ -1,0 +1,188 @@
+* { box-sizing: border-box; }
+
+:root {
+  --bg: #0b0d10;
+  --fg: #f2f5f7;
+  --muted: #aab4bf;
+  --border: #2b3138;
+  --rowMastered: #113019;
+  --rowUnknown: #301313;
+  --panel: #12161b;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body.cardPage {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+header a {
+  color: var(--fg);
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+main { padding: 16px; }
+
+body.cardPage main {
+  flex: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.small { color: var(--muted); font-size: 12px; }
+
+.tableWrap {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead th {
+  text-align: left;
+  padding: 10px 10px;
+  background: #0f1317;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+tr.mastered { background: var(--rowMastered); }
+tr.unknown { background: var(--rowUnknown); }
+
+.checkboxCell { width: 90px; }
+
+.card {
+  width: min(640px, 92vw);
+  height: min(520px, calc(100vh - 220px));
+  display: grid;
+  grid-template-rows: 1fr 1.2fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
+}
+
+body.cardPage .card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 18%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  z-index: 2;
+}
+
+body.cardPage .card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18%;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--bg), transparent);
+  z-index: 2;
+}
+
+.cardPanel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 14px;
+  overflow: hidden;
+}
+
+body.cardPage .cardPanel:first-child,
+body.cardPage .cardPanel:last-child {
+  opacity: 0.55;
+  transform: scale(0.94);
+}
+
+body.cardPage .cardPanel.centerWord {
+  opacity: 1;
+  transform: scale(1);
+}
+
+body.cardPage .pickerLabel {
+  display: none;
+}
+
+.centerWord {
+  text-align: center;
+}
+
+.centerWord .word {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.centerWord .meaning {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.animSwap {
+  will-change: transform, opacity;
+}
+
+.sideWord {
+  color: var(--muted);
+  font-size: 20px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 8px;
+  padding: 2px 6px;
+  background: #0f1317;
+  color: var(--fg);
+}
