@@ -17,18 +17,72 @@ async function apiSetMastered(id, mastered) {
   if (!data.ok) throw new Error(data.error ?? "API error");
 }
 
+async function apiSetVocab(id, vocab) {
+  const res = await fetch("/api/vocab", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id, vocab }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error ?? "API error");
+}
+
 const els = {
   prev: document.getElementById("prev"),
   next: document.getElementById("next"),
   word: document.getElementById("word"),
   meaning: document.getElementById("meaning"),
-  mastered: document.getElementById("mastered"),
   stats: document.getElementById("stats"),
   autoAudio: document.getElementById("autoAudio"),
   audioTip: document.getElementById("audioTip"),
+  badgePrev: document.getElementById("badgePrev"),
+  badgeCur: document.getElementById("badgeCur"),
+  badgeNext: document.getElementById("badgeNext"),
+  prevMeta: document.getElementById("prevMeta"),
+  curMeta: document.getElementById("curMeta"),
+  nextMeta: document.getElementById("nextMeta"),
+  jumpFirstUnknown: document.getElementById("jumpFirstUnknown"),
+  filter: document.getElementById("filter"),
 };
 
 const items = await apiGetWords();
+
+function getFilter() {
+  try {
+    return localStorage.getItem("cardFilter") ?? "all";
+  } catch {
+    return "all";
+  }
+}
+
+function setFilter(v) {
+  try {
+    localStorage.setItem("cardFilter", v);
+  } catch {
+    // ignore
+  }
+}
+
+function applyFilterIndices(mode) {
+  const indices = [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (mode === "mastered" && !it.mastered) continue;
+    if (mode === "unknown" && it.mastered) continue;
+    if (mode === "vocab" && !it.vocab) continue;
+    indices.push(i);
+  }
+  return indices;
+}
+
+let filterMode = getFilter();
+let visibleIndices = applyFilterIndices(filterMode);
+
+function getVisiblePosForIndex(idx) {
+  const pos = visibleIndices.indexOf(idx);
+  return pos >= 0 ? pos : 0;
+}
 
 const session = {
   startAt: new Date(),
@@ -71,6 +125,7 @@ function setIndexToUrl(i) {
 }
 
 let index = getIndexFromUrl();
+let visiblePos = getVisiblePosForIndex(index);
 
 function playSwapAnimation(direction) {
   // direction: -1 (prev) or +1 (next)
@@ -126,17 +181,92 @@ function unlockAudioOnce() {
   if (els.audioTip) els.audioTip.textContent = "";
 }
 
+function setBadge(el, item) {
+  if (!el) return;
+  if (!item) {
+    el.textContent = "";
+    el.classList.remove("show", "mastered", "unknown");
+    return;
+  }
+  const mastered = Boolean(item.mastered);
+  const prefix = item.vocab ? "生词 · " : "";
+  el.textContent = `${prefix}${mastered ? "已掌握" : "未掌握"}`;
+  el.classList.toggle("show", true);
+  el.classList.toggle("mastered", mastered);
+  el.classList.toggle("unknown", !mastered);
+}
+
+function setPanelStateFromItem(badgeEl, item) {
+  const panel = badgeEl?.parentElement;
+  if (!panel) return;
+  panel.classList.remove("state-mastered", "state-unknown");
+  if (!item) return;
+  panel.classList.add(item.mastered ? "state-mastered" : "state-unknown");
+}
+
+function setMeta(el, item) {
+  if (!el) return;
+  if (!item) {
+    el.textContent = "";
+    return;
+  }
+  const other = item.other ? String(item.other) : "—";
+  const freq = item.freq != null ? String(item.freq) : "—";
+  el.innerHTML = `词频 ${freq}<span class="sep">·</span>其他拼写 ${escapeHtml(other)}`;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function render(direction = 1) {
+  // ensure visible indices up to date
+  visibleIndices = applyFilterIndices(filterMode);
+  if (visibleIndices.length === 0) {
+    els.prev.textContent = "—";
+    els.next.textContent = "—";
+    els.word.textContent = "—";
+    els.meaning.textContent = "";
+    setBadge(els.badgePrev, null);
+    setBadge(els.badgeCur, null);
+    setBadge(els.badgeNext, null);
+    setMeta(els.prevMeta, null);
+    setMeta(els.curMeta, null);
+    setMeta(els.nextMeta, null);
+    renderStats();
+    return;
+  }
+
+  // keep index within visible list
+  visiblePos = clamp(visiblePos, 0, visibleIndices.length - 1);
+  index = visibleIndices[visiblePos];
+
   const current = items[index];
-  const prev = items[index - 1];
-  const next = items[index + 1];
+  const prev = visiblePos > 0 ? items[visibleIndices[visiblePos - 1]] : null;
+  const next = visiblePos < visibleIndices.length - 1 ? items[visibleIndices[visiblePos + 1]] : null;
 
   els.prev.textContent = prev ? prev.word : "—";
   els.next.textContent = next ? next.word : "—";
 
   els.word.textContent = current.word;
   els.meaning.textContent = current.meaning ?? "";
-  els.mastered.textContent = current.mastered ? "状态：已掌握" : "状态：未掌握";
+
+  setBadge(els.badgePrev, prev);
+  setBadge(els.badgeCur, current);
+  setBadge(els.badgeNext, next);
+
+  setPanelStateFromItem(els.badgePrev, prev);
+  setPanelStateFromItem(els.badgeCur, current);
+  setPanelStateFromItem(els.badgeNext, next);
+
+  setMeta(els.prevMeta, prev);
+  setMeta(els.curMeta, current);
+  setMeta(els.nextMeta, next);
 
   setIndexToUrl(index);
   renderStats();
@@ -165,7 +295,7 @@ async function mark(mastered) {
     if (before !== mastered) session.markedCount += 1;
     renderStats();
     // auto go next after a successful mark
-    if (index < items.length - 1) go(1);
+    if (visiblePos < visibleIndices.length - 1) go(1);
   } catch (e) {
     // rollback
     current.mastered = !mastered;
@@ -175,8 +305,41 @@ async function mark(mastered) {
 }
 
 function go(delta) {
-  index = clamp(index + delta, 0, items.length - 1);
+  if (visibleIndices.length === 0) return;
+  visiblePos = clamp(visiblePos + delta, 0, visibleIndices.length - 1);
   render(delta);
+}
+
+async function toggleVocab() {
+  const current = items[index];
+  if (!current) return;
+  const before = Boolean(current.vocab);
+  current.vocab = !before;
+  render(1);
+  try {
+    await apiSetVocab(current.id, current.vocab);
+    // if filter is vocab and we removed it, move to next available
+    if (filterMode === "vocab" && before === true && current.vocab === false) {
+      visibleIndices = applyFilterIndices(filterMode);
+      visiblePos = clamp(visiblePos, 0, Math.max(0, visibleIndices.length - 1));
+      render(1);
+    }
+  } catch (e) {
+    current.vocab = before;
+    render(1);
+    alert(String(e));
+  }
+}
+
+function jumpToFirstUnmastered() {
+  const target = items.findIndex((it) => !it.mastered);
+  if (target < 0) {
+    alert("已全部掌握");
+    return;
+  }
+  const direction = target < index ? -1 : 1;
+  index = target;
+  render(direction);
 }
 
 if (els.autoAudio) {
@@ -184,6 +347,24 @@ if (els.autoAudio) {
   els.autoAudio.addEventListener("change", () => {
     setAutoAudio(Boolean(els.autoAudio.checked));
     renderStats();
+  });
+}
+
+if (els.jumpFirstUnknown) {
+  els.jumpFirstUnknown.addEventListener("click", () => {
+    unlockAudioOnce();
+    jumpToFirstUnmastered();
+  });
+}
+
+if (els.filter) {
+  els.filter.value = filterMode;
+  els.filter.addEventListener("change", () => {
+    filterMode = els.filter.value;
+    setFilter(filterMode);
+    visibleIndices = applyFilterIndices(filterMode);
+    visiblePos = 0;
+    render(1);
   });
 }
 
@@ -195,6 +376,7 @@ globalThis.addEventListener("keydown", (e) => {
   if (key === "d" || key === "s") go(1);
   if (key === "j") mark(true);
   if (key === "k") mark(false);
+  if (key === "l") toggleVocab();
 });
 
 globalThis.addEventListener("pointerdown", () => unlockAudioOnce(), { once: true });

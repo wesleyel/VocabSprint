@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
   // API
   if (url.pathname === "/api/words" && req.method === "GET") {
     const statuses = await store.getAllStatuses();
+    const vocabs = await store.getAllVocab();
     const items = words.map((w) => ({
       id: w.id,
       rank: w.rank,
@@ -43,6 +44,7 @@ Deno.serve(async (req) => {
       meaning: w.meaning,
       other: w.other,
       mastered: statuses.get(w.id) ?? false,
+      vocab: vocabs.get(w.id) ?? false,
     }));
     return json({ ok: true, items });
   }
@@ -71,7 +73,32 @@ Deno.serve(async (req) => {
     const exists = words.some((w) => w.id === id);
     if (!exists) return badRequest("Unknown id");
 
-    await store.setMastered(id, mastered);
+    await store.setMastered(id as number, mastered);
+    return json({ ok: true });
+  }
+
+  if (url.pathname === "/api/vocab" && req.method === "POST") {
+    let payload: unknown;
+    try {
+      payload = await req.json();
+    } catch {
+      return badRequest("Invalid JSON");
+    }
+
+    if (!payload || typeof payload !== "object" || !("id" in payload) || !("vocab" in payload)) {
+      return badRequest("Body must be { id: number, vocab: boolean }");
+    }
+
+    const id = (payload as { id: unknown }).id;
+    const vocab = (payload as { vocab: unknown }).vocab;
+
+    if (!Number.isInteger(id)) return badRequest("id must be an integer");
+    if (typeof vocab !== "boolean") return badRequest("vocab must be boolean");
+
+    const exists = words.some((w) => w.id === id);
+    if (!exists) return badRequest("Unknown id");
+
+    await store.setVocab(id as number, vocab);
     return json({ ok: true });
   }
 

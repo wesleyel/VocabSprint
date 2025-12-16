@@ -12,10 +12,19 @@
         <div>单词管理（逐个视图）</div>
         <div class="small">
           <span class="kbd">A</span>/<span class="kbd">W</span> 上一个，<span class="kbd">D</span>/<span class="kbd">S</span> 下一个，
-          <span class="kbd">J</span> 标记熟知，<span class="kbd">K</span> 标记不会
+          <span class="kbd">J</span> 标记熟知，<span class="kbd">K</span> 标记不会，<span class="kbd">L</span> 加入/移出生词本
         </div>
         <div id="stats" class="small" style="margin-top: 6px;"></div>
         <div class="small" style="margin-top: 6px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+          <label style="display: inline-flex; gap: 8px; align-items: center;">
+            筛选
+            <select id="filter">
+              <option value="all">全部</option>
+              <option value="mastered">已掌握</option>
+              <option value="unknown">未掌握</option>
+              <option value="vocab">生词</option>
+            </select>
+          </label>
           <label style="display: inline-flex; gap: 8px; align-items: center;">
             <input id="autoAudio" type="checkbox" /> 自动发音
           </label>
@@ -23,6 +32,7 @@
         </div>
       </div>
       <nav>
+        <button id="jumpFirstUnknown" type="button">第一个未掌握</button>
         <a href="/table">Table 视图</a>
       </nav>
     </header>
@@ -30,19 +40,24 @@
     <main>
       <div class="card">
         <div class="cardPanel">
+          <div id="badgePrev" class="cornerBadge" aria-hidden="true"></div>
           <div class="small pickerLabel">上一个</div>
           <div id="prev" class="sideWord">—</div>
+          <div id="prevMeta" class="metaRow"></div>
         </div>
 
         <div class="cardPanel centerWord">
+          <div id="badgeCur" class="cornerBadge" aria-hidden="true"></div>
           <div id="word" class="word">—</div>
           <div id="meaning" class="meaning"></div>
-          <div id="mastered" class="small" style="margin-top: 12px;"></div>
+          <div id="curMeta" class="metaRow" style="margin-top: 12px;"></div>
         </div>
 
         <div class="cardPanel">
+          <div id="badgeNext" class="cornerBadge" aria-hidden="true"></div>
           <div class="small pickerLabel">下一个</div>
           <div id="next" class="sideWord">—</div>
+          <div id="nextMeta" class="metaRow"></div>
         </div>
       </div>
     </main>

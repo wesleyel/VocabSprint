@@ -43,6 +43,29 @@ header a {
   background: var(--panel);
 }
 
+header button {
+  color: var(--fg);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  cursor: pointer;
+}
+
+header select {
+  color: var(--fg);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+header nav {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 main { padding: 16px; }
 
 body.cardPage main {
@@ -106,9 +129,9 @@ body.cardPage .card::before {
   left: 0;
   right: 0;
   top: 0;
-  height: 18%;
+  height: 14%;
   pointer-events: none;
-  background: linear-gradient(to bottom, var(--bg), transparent);
+  background: linear-gradient(to bottom, var(--bg), transparent 85%);
   z-index: 2;
 }
 
@@ -118,9 +141,9 @@ body.cardPage .card::after {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 18%;
+  height: 14%;
   pointer-events: none;
-  background: linear-gradient(to top, var(--bg), transparent);
+  background: linear-gradient(to top, var(--bg), transparent 85%);
   z-index: 2;
 }
 
@@ -130,6 +153,62 @@ body.cardPage .card::after {
   background: var(--panel);
   padding: 14px;
   overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardPanel.state-mastered {
+  box-shadow: inset 8px 0 0 0 var(--rowMastered);
+}
+
+.cardPanel.state-unknown {
+  box-shadow: inset 8px 0 0 0 var(--rowUnknown);
+}
+
+.cornerBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--muted);
+  background: transparent;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.cornerBadge.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cornerBadge.mastered {
+  color: var(--fg);
+}
+
+.cornerBadge.unknown {
+  color: var(--muted);
+}
+
+.metaRow {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaRow .sep {
+  opacity: 0.7;
 }
 
 body.cardPage .cardPanel:first-child,
@@ -149,6 +228,8 @@ body.cardPage .pickerLabel {
 
 .centerWord {
   text-align: center;
+  align-items: center;
+  justify-content: center;
 }
 
 .centerWord .word {
@@ -174,7 +255,7 @@ body.cardPage .pickerLabel {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  flex: 1;
 }
 
 .kbd {

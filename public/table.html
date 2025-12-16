@@ -10,9 +10,18 @@
     <header>
       <div>
         <div>单词管理（Table）</div>
-        <div class="small">勾选表示“掌握”，行背景色会变化</div>
+        <div class="small">W/S 或 A/D 切换行（焦点在 checkbox），J/K 标记掌握/未掌握，L 加入/移出生词本</div>
       </div>
       <nav>
+        <label class="small" style="display: inline-flex; gap: 8px; align-items: center;">
+          筛选
+          <select id="filter">
+            <option value="all">全部</option>
+            <option value="mastered">已掌握</option>
+            <option value="unknown">未掌握</option>
+            <option value="vocab">生词</option>
+          </select>
+        </label>
         <a href="/card">逐个视图</a>
       </nav>
     </header>
