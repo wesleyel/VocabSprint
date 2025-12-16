@@ -18,12 +18,12 @@ jobs:
             asset: VocabSprint-linux-x86_64.zip
             exe: VocabSprint
           # macOS Intel (x86_64)
-          - os: macos-13
+          - os: macos-15-intel
             asset: VocabSprint-macos-x86_64.zip
             exe: VocabSprint
 
           # macOS Apple Silicon (arm64)
-          - os: macos-14
+          - os: macos-latest
             asset: VocabSprint-macos-aarch64.zip
             exe: VocabSprint
           - os: windows-latest
