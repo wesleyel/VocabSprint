@@ -332,13 +332,30 @@ async function toggleVocab() {
 }
 
 function jumpToFirstUnmastered() {
-  const target = items.findIndex((it) => !it.mastered);
-  if (target < 0) {
+  const targetIdx = items.findIndex((it) => !it.mastered);
+  if (targetIdx < 0) {
     alert("已全部掌握");
     return;
   }
-  const direction = target < index ? -1 : 1;
-  index = target;
+
+  const fromIdx = index;
+
+  // Keep filter-aware navigation consistent.
+  visibleIndices = applyFilterIndices(filterMode);
+  let pos = visibleIndices.indexOf(targetIdx);
+  if (pos < 0) {
+    // Current filter hides the target; switch to all so jump always works.
+    filterMode = "all";
+    setFilter(filterMode);
+    if (els.filter) els.filter.value = filterMode;
+    visibleIndices = applyFilterIndices(filterMode);
+    pos = visibleIndices.indexOf(targetIdx);
+  }
+
+  visiblePos = pos >= 0 ? pos : 0;
+  index = visibleIndices[visiblePos];
+
+  const direction = index < fromIdx ? -1 : 1;
   render(direction);
 }
 

@@ -1,0 +1,70 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: VocabSprint-linux-x86_64
+            exe: VocabSprint
+          - os: macos-latest
+            artifact: VocabSprint-macos-x86_64
+            exe: VocabSprint
+          - os: windows-latest
+            artifact: VocabSprint-windows-x86_64
+            exe: VocabSprint.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Build binary
+        run: |
+          mkdir -p dist
+          deno compile --unstable-kv --allow-net --allow-read --allow-write --allow-env -o dist/${{ matrix.exe }} server.ts
+
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p package
+          cp -R public package/public
+          cp netem_full_list.json package/netem_full_list.json
+          cp -R dist package/dist
+          (cd package && zip -r ../${{ matrix.artifact }}.zip .)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/**/*.zip
