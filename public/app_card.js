@@ -42,7 +42,6 @@ const els = {
   prevMeta: document.getElementById("prevMeta"),
   curMeta: document.getElementById("curMeta"),
   nextMeta: document.getElementById("nextMeta"),
-  jumpFirstUnknown: document.getElementById("jumpFirstUnknown"),
   filter: document.getElementById("filter"),
 };
 
@@ -296,11 +295,11 @@ async function mark(mastered) {
     renderStats();
     // auto go next after a successful mark
     if (visiblePos < visibleIndices.length - 1) go(1);
-  } catch (e) {
+  } catch (_e) {
     // rollback
     current.mastered = !mastered;
     render(1);
-    alert(String(e));
+    // silent
   }
 }
 
@@ -324,39 +323,53 @@ async function toggleVocab() {
       visiblePos = clamp(visiblePos, 0, Math.max(0, visibleIndices.length - 1));
       render(1);
     }
-  } catch (e) {
+  } catch (_e) {
     current.vocab = before;
     render(1);
-    alert(String(e));
+    // silent
   }
 }
 
-function jumpToFirstUnmastered() {
-  const targetIdx = items.findIndex((it) => !it.mastered);
-  if (targetIdx < 0) {
-    alert("已全部掌握");
-    return;
-  }
+function jumpToNearestUnmastered(direction) {
+  // direction: -1 (prev) or +1 (next)
+  if (!Number.isFinite(direction) || direction === 0) return;
+  if (visibleIndices.length === 0) return;
+  const step = direction < 0 ? -1 : 1;
 
-  const fromIdx = index;
+  const findInVisible = () => {
+    // Ensure visible indices are current.
+    visibleIndices = applyFilterIndices(filterMode);
+    if (visibleIndices.length === 0) return -1;
 
-  // Keep filter-aware navigation consistent.
-  visibleIndices = applyFilterIndices(filterMode);
-  let pos = visibleIndices.indexOf(targetIdx);
-  if (pos < 0) {
-    // Current filter hides the target; switch to all so jump always works.
+    // Keep visiblePos in range.
+    visiblePos = clamp(visiblePos, 0, visibleIndices.length - 1);
+
+    for (let p = visiblePos + step; p >= 0 && p < visibleIndices.length; p += step) {
+      const idx = visibleIndices[p];
+      const it = items[idx];
+      if (it && !it.mastered) return p;
+    }
+    return -1;
+  };
+
+  let targetPos = findInVisible();
+
+  // If current filter has no reachable unknown, fall back to 'all'.
+  if (targetPos < 0 && filterMode !== "all") {
+    const fromIdx = index;
     filterMode = "all";
     setFilter(filterMode);
     if (els.filter) els.filter.value = filterMode;
     visibleIndices = applyFilterIndices(filterMode);
-    pos = visibleIndices.indexOf(targetIdx);
+    // Preserve current item position when switching filter.
+    visiblePos = Math.max(0, visibleIndices.indexOf(fromIdx));
+    targetPos = findInVisible();
   }
 
-  visiblePos = pos >= 0 ? pos : 0;
-  index = visibleIndices[visiblePos];
+  if (targetPos < 0) return; // silent
 
-  const direction = index < fromIdx ? -1 : 1;
-  render(direction);
+  visiblePos = targetPos;
+  render(step);
 }
 
 if (els.autoAudio) {
@@ -364,13 +377,6 @@ if (els.autoAudio) {
   els.autoAudio.addEventListener("change", () => {
     setAutoAudio(Boolean(els.autoAudio.checked));
     renderStats();
-  });
-}
-
-if (els.jumpFirstUnknown) {
-  els.jumpFirstUnknown.addEventListener("click", () => {
-    unlockAudioOnce();
-    jumpToFirstUnmastered();
   });
 }
 
@@ -385,16 +391,31 @@ if (els.filter) {
   });
 }
 
-globalThis.addEventListener("keydown", (e) => {
+globalThis.addEventListener(
+  "keydown",
+  (e) => {
   if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
   unlockAudioOnce();
   const key = e.key.toLowerCase();
   if (key === "a" || key === "w") go(-1);
   if (key === "d" || key === "s") go(1);
+  if (key === "q") {
+    e.preventDefault();
+    e.stopPropagation();
+    jumpToNearestUnmastered(-1);
+  }
+  if (key === "e") {
+    e.preventDefault();
+    e.stopPropagation();
+    jumpToNearestUnmastered(1);
+  }
   if (key === "j") mark(true);
   if (key === "k") mark(false);
   if (key === "l") toggleVocab();
-});
+  },
+  { capture: true },
+);
 
 globalThis.addEventListener("pointerdown", () => unlockAudioOnce(), { once: true });
 
