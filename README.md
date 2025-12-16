@@ -7,8 +7,6 @@
 - Table 视图预览图：![](docs/preview-table.png)
 - 逐个视图预览图：![](docs/preview-card.png)
 
-（占位）
-
 ## 功能
 
 ### 数据展示
@@ -53,6 +51,39 @@
 
 - http://localhost:8000/table
 - http://localhost:8000/card
+
+## CLI（参数 & 环境变量）
+
+入口文件是 `cli.ts`（`server.ts` 仅提供 `startServer()`）。
+
+优先级：
+
+- 参数 > 环境变量 > 默认值
+
+常用参数：
+
+- `--port <number>` / `-p <number>`：端口（环境变量 `PORT`，默认 `8000`）
+- `--hostname <string>`：绑定地址（环境变量 `HOSTNAME`，默认 `0.0.0.0`）
+- `--words-file <path>`：词库 JSON 路径（环境变量 `WORDS_FILE`，默认 `./netem_full_list.json`）
+- `--kv-path <path>`：Deno KV 路径（环境变量 `KV_PATH`，默认 `./data/kv`）
+- `--open` / `--no-open`：是否尝试自动打开浏览器（环境变量 `NO_OPEN=1` 可禁用；开发模式默认不打开，`AUTO_OPEN=1` 可开启）
+- `--no-chdir`：禁用“编译后二进制启动时自动 chdir 到可执行文件目录”的行为（环境变量 `NO_CHDIR=1` 同理）
+
+示例：
+
+- `deno task dev -- --port 8001`
+- `deno task start`（默认会尝试自动打开浏览器，可用 `--no-open` 或 `NO_OPEN=1` 关闭）
+- `WORDS_FILE=./netem_full_list.json KV_PATH=./data/kv deno task start`
+- `deno run --unstable-kv --allow-net --allow-read --allow-write --allow-env cli.ts --port 8002 --words-file ./netem_full_list.json --kv-path ./data/kv`
+
+查看完整帮助：
+
+- `deno task start -- --help`
+
+Open 默认行为：
+
+- `deno task dev`：默认不打开；可用 `AUTO_OPEN=1` 或传 `--open` 开启
+- `deno task start`：默认打开；可用 `NO_OPEN=1` 或传 `--no-open` 关闭
 
 ## 数据与状态存储
 

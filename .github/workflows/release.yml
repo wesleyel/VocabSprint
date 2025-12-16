@@ -17,8 +17,14 @@ jobs:
           - os: ubuntu-latest
             asset: VocabSprint-linux-x86_64.zip
             exe: VocabSprint
-          - os: macos-latest
+          # macOS Intel (x86_64)
+          - os: macos-13
             asset: VocabSprint-macos-x86_64.zip
+            exe: VocabSprint
+
+          # macOS Apple Silicon (arm64)
+          - os: macos-14
+            asset: VocabSprint-macos-aarch64.zip
             exe: VocabSprint
           - os: windows-latest
             asset: VocabSprint-windows-x86_64.zip
@@ -34,9 +40,18 @@ jobs:
           deno-version: v2.x
 
       - name: Build binary
+        shell: bash
         run: |
           mkdir -p dist
-          deno compile --unstable-kv --allow-net --allow-read --allow-write --allow-env --allow-run -o dist/${{ matrix.exe }} server.ts
+          deno compile \
+            --unstable-kv \
+            --allow-net \
+            --allow-read \
+            --allow-write \
+            --allow-env \
+            --allow-run \
+            -o dist/${{ matrix.exe }} \
+            cli.ts
 
       - name: Package zip (linux/macos)
         if: runner.os != 'Windows'
@@ -95,6 +110,6 @@ jobs:
       - name: Publish GitHub Release assets
         uses: softprops/action-gh-release@v2
         with:
-          overwrite_files: true
+          generate_release_notes: true
           files: |
             artifacts/*.zip
