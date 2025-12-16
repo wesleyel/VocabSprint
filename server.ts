@@ -5,6 +5,48 @@ import { openStatusStore } from "./src/status_store.ts";
 const WORDS_FILE = Deno.env.get("WORDS_FILE") ?? "./netem_full_list.json";
 const KV_PATH = Deno.env.get("KV_PATH") ?? "./data/kv";
 
+function isRunningUnderDeno(): boolean {
+  try {
+    const base = Deno.execPath().split(/[\\/]/).pop()?.toLowerCase() ?? "";
+    return base === "deno" || base === "deno.exe";
+  } catch {
+    return true;
+  }
+}
+
+function shouldAutoOpen(): boolean {
+  if ((Deno.env.get("NO_OPEN") ?? "").toLowerCase() === "1") return false;
+  // In dev (deno run), default to not opening; allow opt-in.
+  if (isRunningUnderDeno()) return (Deno.env.get("AUTO_OPEN") ?? "") === "1";
+  // In compiled binary, open by default.
+  return true;
+}
+
+async function openBrowser(url: string) {
+  try {
+    if (!shouldAutoOpen()) return;
+    const os = Deno.build.os;
+    if (os === "darwin") {
+      await new Deno.Command("open", { args: [url] }).output();
+    } else if (os === "windows") {
+      // "start" is a shell builtin
+      await new Deno.Command("cmd", { args: ["/c", "start", "", url] }).output();
+    } else {
+      await new Deno.Command("xdg-open", { args: [url] }).output();
+    }
+  } catch {
+    // best-effort only
+  }
+}
+
+function parsePort(): number {
+  const raw = Deno.env.get("PORT");
+  const p = raw ? Number(raw) : 8000;
+  return Number.isFinite(p) && p > 0 ? Math.trunc(p) : 8000;
+}
+
+const PORT = parsePort();
+
 const words = await loadWords(WORDS_FILE);
 const store = await openStatusStore(KV_PATH);
 
@@ -18,7 +60,7 @@ function badRequest(message: string) {
   return json({ ok: false, error: message }, { status: 400 });
 }
 
-Deno.serve(async (req) => {
+const handler = async (req: Request) => {
   const url = new URL(req.url);
 
   // Pages
@@ -116,4 +158,8 @@ Deno.serve(async (req) => {
   }
 
   return new Response("Not Found", { status: 404 });
-});
+};
+
+Deno.serve({ hostname: "0.0.0.0", port: PORT }, handler);
+console.log(`Listening on http://localhost:${PORT}/`);
+await openBrowser(`http://localhost:${PORT}/`);

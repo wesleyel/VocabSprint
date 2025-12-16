@@ -15,13 +15,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact: VocabSprint-linux-x86_64
+            asset: VocabSprint-linux-x86_64.zip
             exe: VocabSprint
           - os: macos-latest
-            artifact: VocabSprint-macos-x86_64
+            asset: VocabSprint-macos-x86_64.zip
             exe: VocabSprint
           - os: windows-latest
-            artifact: VocabSprint-windows-x86_64
+            asset: VocabSprint-windows-x86_64.zip
             exe: VocabSprint.exe
 
     runs-on: ${{ matrix.os }}
@@ -36,16 +36,50 @@ jobs:
       - name: Build binary
         run: |
           mkdir -p dist
-          deno compile --unstable-kv --allow-net --allow-read --allow-write --allow-env -o dist/${{ matrix.exe }} server.ts
+          deno compile --unstable-kv --allow-net --allow-read --allow-write --allow-env --allow-run -o dist/${{ matrix.exe }} server.ts
+
+      - name: Package zip (linux/macos)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf VocabSprint || true
+          mkdir -p VocabSprint/public VocabSprint/data
+          cp -R public/. VocabSprint/public/
+          cp netem_full_list.json VocabSprint/netem_full_list.json
+          cp "dist/${{ matrix.exe }}" "VocabSprint/${{ matrix.exe }}"
+
+          if ! command -v zip >/dev/null 2>&1; then
+            if command -v apt-get >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y zip
+            else
+              echo "zip not found" >&2
+              exit 1
+            fi
+          fi
+
+          (cd VocabSprint && zip -qq -r "../${{ matrix.asset }}" .)
+
+      - name: Package zip (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force VocabSprint -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path VocabSprint/public, VocabSprint/data | Out-Null
+
+          Copy-Item -Recurse -Force public\* VocabSprint\public\
+          Copy-Item -Force netem_full_list.json VocabSprint\netem_full_list.json
+          Copy-Item -Force "dist\${{ matrix.exe }}" "VocabSprint\${{ matrix.exe }}"
+
+          if (Test-Path "${{ matrix.asset }}") { Remove-Item -Force "${{ matrix.asset }}" }
+          Compress-Archive -Path "VocabSprint\*" -DestinationPath "${{ matrix.asset }}" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: |
-            public
-            netem_full_list.json
-            dist/${{ matrix.exe }}
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
 
   release:
     needs: build
@@ -56,54 +90,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Prepare linux package
-        shell: bash
-        run: |
-          rm -rf package-linux || true
-          mkdir -p package-linux/public package-linux/dist
-          cp -R "artifacts/VocabSprint-linux-x86_64/public" package-linux/public
-          cp "artifacts/VocabSprint-linux-x86_64/netem_full_list.json" package-linux/netem_full_list.json
-          cp "artifacts/VocabSprint-linux-x86_64/dist/VocabSprint" package-linux/dist/VocabSprint
-
-      - name: Zip linux output
-        uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -r VocabSprint-linux-x86_64.zip package-linux
-
-      - name: Prepare macos package
-        shell: bash
-        run: |
-          rm -rf package-macos || true
-          mkdir -p package-macos/public package-macos/dist
-          cp -R "artifacts/VocabSprint-macos-x86_64/public" package-macos/public
-          cp "artifacts/VocabSprint-macos-x86_64/netem_full_list.json" package-macos/netem_full_list.json
-          cp "artifacts/VocabSprint-macos-x86_64/dist/VocabSprint" package-macos/dist/VocabSprint
-
-      - name: Zip macos output
-        uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -r VocabSprint-macos-x86_64.zip package-macos
-
-      - name: Prepare windows package
-        shell: bash
-        run: |
-          rm -rf package-windows || true
-          mkdir -p package-windows/public package-windows/dist
-          cp -R "artifacts/VocabSprint-windows-x86_64/public" package-windows/public
-          cp "artifacts/VocabSprint-windows-x86_64/netem_full_list.json" package-windows/netem_full_list.json
-          cp "artifacts/VocabSprint-windows-x86_64/dist/VocabSprint.exe" package-windows/dist/VocabSprint.exe
-
-      - name: Zip windows output
-        uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -r VocabSprint-windows-x86_64.zip package-windows
+          merge-multiple: true
 
       - name: Publish GitHub Release assets
         uses: softprops/action-gh-release@v2
         with:
           overwrite_files: true
           files: |
-            VocabSprint-linux-x86_64.zip
-            VocabSprint-macos-x86_64.zip
-            VocabSprint-windows-x86_64.zip
+            artifacts/*.zip
