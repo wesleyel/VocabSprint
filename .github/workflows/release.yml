@@ -33,52 +33,57 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Prepare dist dir
-        run: deno eval "await Deno.mkdir('dist', { recursive: true });"
-
       - name: Build binary
-        run: deno compile --unstable-kv --allow-net --allow-read --allow-write --allow-env -o dist/${{ matrix.exe }} server.ts
-
-      - name: Package (macOS/Linux)
-        if: runner.os != 'Windows'
-        shell: bash
         run: |
-          mkdir -p package
-          cp -R public package/public
-          cp netem_full_list.json package/netem_full_list.json
-          cp -R dist package/dist
-          (cd package && zip -r ../${{ matrix.artifact }}.zip .)
-
-      - name: Package (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          if (Test-Path package) { Remove-Item -Recurse -Force package }
-          New-Item -ItemType Directory -Path package | Out-Null
-          Copy-Item -Recurse -Force public package\public
-          Copy-Item -Force netem_full_list.json package\netem_full_list.json
-          New-Item -ItemType Directory -Path package\dist | Out-Null
-          Copy-Item -Recurse -Force dist\* package\dist
-          Compress-Archive -Path package\* -DestinationPath "${{ matrix.artifact }}.zip" -Force
+          mkdir -p dist
+          deno compile --unstable-kv --allow-net --allow-read --allow-write --allow-env -o dist/${{ matrix.exe }} server.ts
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}.zip
+          path: |
+            public
+            netem_full_list.json
+            dist/${{ matrix.exe }}
 
   release:
     needs: build
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact: VocabSprint-linux-x86_64
+            exe: VocabSprint
+          - artifact: VocabSprint-macos-x86_64
+            exe: VocabSprint
+          - artifact: VocabSprint-windows-x86_64
+            exe: VocabSprint.exe
+
     steps:
-      - name: Download artifacts
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
 
-      - name: Publish GitHub Release
+      - name: Prepare package folder
+        shell: bash
+        run: |
+          rm -rf package || true
+          mkdir -p package/public package/dist
+          cp -R "${{ matrix.artifact }}/public" package/public
+          cp "${{ matrix.artifact }}/netem_full_list.json" package/netem_full_list.json
+          cp "${{ matrix.artifact }}/dist/${{ matrix.exe }}" package/dist/${{ matrix.exe }}
+
+      - name: Zip output
+        uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r ${{ matrix.artifact }}.zip package
+
+      - name: Publish GitHub Release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/**/**/*.zip
+          files: ${{ matrix.artifact }}.zip
