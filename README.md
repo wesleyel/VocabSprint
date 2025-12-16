@@ -41,7 +41,14 @@
 	- 注意：浏览器通常需要一次用户交互（键盘/点击）后才允许自动播放
 - 筛选：全部 / 已掌握 / 未掌握 / 生词（筛选后 prev/next 会在筛选集合内切换）
 
-## 运行（开发模式）
+## 运行（binary）
+
+下载对应平台的 Release 二进制包，解压后直接运行：
+
+- Windows：双击 `vocab-sprint.exe` 或在命令行执行 `vocab-sprint.exe`
+- macOS / Linux：在终端执行 `./vocab-sprint`
+
+## 运行（deno dev）
 
 在本目录执行：
 
@@ -54,36 +61,11 @@
 
 ## CLI（参数 & 环境变量）
 
-入口文件是 `cli.ts`（`server.ts` 仅提供 `startServer()`）。
+入口文件是 `cli.ts`。
 
-优先级：
-
-- 参数 > 环境变量 > 默认值
-
-常用参数：
-
-- `--port <number>` / `-p <number>`：端口（环境变量 `PORT`，默认 `8000`）
-- `--hostname <string>`：绑定地址（环境变量 `HOSTNAME`，默认 `0.0.0.0`）
-- `--words-file <path>`：词库 JSON 路径（环境变量 `WORDS_FILE`，默认 `./netem_full_list.json`）
-- `--kv-path <path>`：Deno KV 路径（环境变量 `KV_PATH`，默认 `./data/kv`）
-- `--open` / `--no-open`：是否尝试自动打开浏览器（环境变量 `NO_OPEN=1` 可禁用；开发模式默认不打开，`AUTO_OPEN=1` 可开启）
-- `--no-chdir`：禁用“编译后二进制启动时自动 chdir 到可执行文件目录”的行为（环境变量 `NO_CHDIR=1` 同理）
-
-示例：
-
-- `deno task dev -- --port 8001`
-- `deno task start`（默认会尝试自动打开浏览器，可用 `--no-open` 或 `NO_OPEN=1` 关闭）
-- `WORDS_FILE=./netem_full_list.json KV_PATH=./data/kv deno task start`
-- `deno run --unstable-kv --allow-net --allow-read --allow-write --allow-env cli.ts --port 8002 --words-file ./netem_full_list.json --kv-path ./data/kv`
-
-查看完整帮助：
+查看帮助：
 
 - `deno task start -- --help`
-
-Open 默认行为：
-
-- `deno task dev`：默认不打开；可用 `AUTO_OPEN=1` 或传 `--open` 开启
-- `deno task start`：默认打开；可用 `NO_OPEN=1` 或传 `--no-open` 关闭
 
 ## 数据与状态存储
 
@@ -92,18 +74,11 @@ Open 默认行为：
 	- 已掌握：`mastered`
 	- 生词本：`vocab`
 
-可选环境变量：
+## Credit
 
-- `WORDS_FILE`：指定 JSON 路径
-- `KV_PATH`：指定 KV 路径
+- 词库数据来源：[NETEM - 考研词汇词频排序数据](https://github.com/exam-data/NETEMVocabulary)
+- 发音接口来源：[有道词典](https://dict.youdao.com/)
 
-## 发布二进制（GitHub Releases）
+## License
 
-本仓库带有 GitHub Actions：当你推送一个 tag（如 `v0.1.0`）时，会自动构建并发布对应平台的可执行文件到 GitHub Release。
-
-示例：
-
-- `git tag v0.1.0`
-- `git push origin v0.1.0`
-
-Release 产物是 zip 包，包含：可执行文件 + `public/` + `netem_full_list.json`。解压后直接运行即可。
+MIT License © 2024-Present
