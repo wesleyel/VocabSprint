@@ -66,6 +66,49 @@ header nav {
   align-items: center;
 }
 
+.floatPanel {
+  position: fixed;
+  left: 50%;
+  top: 72px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100vw - 24px));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 12px;
+  z-index: 50;
+}
+
+.floatPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.floatPanelControls {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.floatPanelTextarea {
+  margin-top: 10px;
+  width: 100%;
+  height: min(52vh, 520px);
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 main { padding: 16px; }
 
 body.cardPage main {

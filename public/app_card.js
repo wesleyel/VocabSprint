@@ -43,6 +43,12 @@ const els = {
   curMeta: document.getElementById("curMeta"),
   nextMeta: document.getElementById("nextMeta"),
   filter: document.getElementById("filter"),
+  exportBtn: document.getElementById("exportBtn"),
+  exportModal: document.getElementById("exportModal"),
+  exportClose: document.getElementById("exportClose"),
+  exportMode: document.getElementById("exportMode"),
+  exportText: document.getElementById("exportText"),
+  exportDownload: document.getElementById("exportDownload"),
 };
 
 const items = await apiGetWords();
@@ -73,6 +79,63 @@ function applyFilterIndices(mode) {
     indices.push(i);
   }
   return indices;
+}
+
+function isExportModalOpen() {
+  return Boolean(els.exportModal && !els.exportModal.hasAttribute("hidden"));
+}
+
+function getExportModeValue() {
+  const v = els.exportMode?.value;
+  if (v === "vocab" || v === "mastered") return v;
+  return "vocab";
+}
+
+function buildExportText(mode) {
+  const list = [];
+  for (const it of items) {
+    if (mode === "vocab" && !it.vocab) continue;
+    if (mode === "mastered" && !it.mastered) continue;
+    const w = String(it.word ?? "").trim();
+    if (w) list.push(w);
+  }
+  return list.join("\n");
+}
+
+function refreshExportText() {
+  if (!els.exportText) return;
+  els.exportText.value = buildExportText(getExportModeValue());
+}
+
+function openExportModal() {
+  if (!els.exportModal) return;
+  if (els.exportMode) {
+    els.exportMode.value = (filterMode === "vocab" || filterMode === "mastered") ? filterMode : "vocab";
+  }
+  refreshExportText();
+  els.exportModal.removeAttribute("hidden");
+  els.exportText?.focus();
+  els.exportText?.select?.();
+}
+
+function closeExportModal() {
+  if (!els.exportModal) return;
+  els.exportModal.setAttribute("hidden", "");
+  els.exportBtn?.focus?.();
+}
+
+function downloadExportTxt() {
+  const mode = getExportModeValue();
+  const content = buildExportText(mode);
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = mode === "vocab" ? "vocab.txt" : "mastered.txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 let filterMode = getFilter();
@@ -391,10 +454,23 @@ if (els.filter) {
   });
 }
 
+if (els.exportBtn) els.exportBtn.addEventListener("click", openExportModal);
+if (els.exportClose) els.exportClose.addEventListener("click", closeExportModal);
+if (els.exportMode) els.exportMode.addEventListener("change", refreshExportText);
+if (els.exportDownload) els.exportDownload.addEventListener("click", downloadExportTxt);
+
 globalThis.addEventListener(
   "keydown",
   (e) => {
-  if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+  if (isExportModalOpen()) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeExportModal();
+    }
+    return;
+  }
+
+  if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT")) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   unlockAudioOnce();
   const key = e.key.toLowerCase();

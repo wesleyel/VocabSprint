@@ -37,6 +37,15 @@ const statusEl = document.getElementById("status");
 const tbody = document.getElementById("tbody");
 const filterEl = document.getElementById("filter");
 
+const exportEls = {
+  btn: document.getElementById("exportBtn"),
+  modal: document.getElementById("exportModal"),
+  close: document.getElementById("exportClose"),
+  mode: document.getElementById("exportMode"),
+  text: document.getElementById("exportText"),
+  download: document.getElementById("exportDownload"),
+};
+
 const itemsAll = await apiGetWords();
 statusEl.textContent = `共 ${itemsAll.length} 个单词`;
 
@@ -66,6 +75,58 @@ function applyFilter(list, mode) {
   if (mode === "unknown") return list.filter((it) => !it.mastered);
   if (mode === "vocab") return list.filter((it) => Boolean(it.vocab));
   return list;
+}
+
+function isExportModalOpen() {
+  return Boolean(exportEls.modal && !exportEls.modal.hasAttribute("hidden"));
+}
+
+function getExportModeValue() {
+  const v = exportEls.mode?.value;
+  if (v === "vocab" || v === "mastered") return v;
+  return "vocab";
+}
+
+function buildExportText(mode) {
+  const filtered = applyFilter(itemsAll, mode);
+  return filtered.map((it) => String(it.word ?? "").trim()).filter(Boolean).join("\n");
+}
+
+function refreshExportText() {
+  if (!exportEls.text) return;
+  exportEls.text.value = buildExportText(getExportModeValue());
+}
+
+function openExportModal() {
+  if (!exportEls.modal) return;
+  const cur = filterEl?.value;
+  if (exportEls.mode) {
+    exportEls.mode.value = (cur === "vocab" || cur === "mastered") ? cur : "vocab";
+  }
+  refreshExportText();
+  exportEls.modal.removeAttribute("hidden");
+  exportEls.text?.focus();
+  exportEls.text?.select?.();
+}
+
+function closeExportModal() {
+  if (!exportEls.modal) return;
+  exportEls.modal.setAttribute("hidden", "");
+  exportEls.btn?.focus?.();
+}
+
+function downloadExportTxt() {
+  const mode = getExportModeValue();
+  const content = buildExportText(mode);
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = mode === "vocab" ? "vocab.txt" : "mastered.txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function clamp(n, min, max) {
@@ -208,11 +269,29 @@ if (filterEl) {
   });
 }
 
+if (exportEls.btn) exportEls.btn.addEventListener("click", openExportModal);
+if (exportEls.close) exportEls.close.addEventListener("click", closeExportModal);
+if (exportEls.mode) exportEls.mode.addEventListener("change", refreshExportText);
+if (exportEls.download) exportEls.download.addEventListener("click", downloadExportTxt);
+
 renderTable();
 
 globalThis.addEventListener("keydown", async (e) => {
   const target = e.target;
   if (!(target instanceof HTMLElement)) return;
+
+  if (isExportModalOpen()) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeExportModal();
+    }
+    return;
+  }
+
+  if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") {
+    return;
+  }
+
   // Only handle when focus is inside the table page and preferably on checkboxes.
   const key = e.key.toLowerCase();
   const isNav = key === "w" || key === "s" || key === "a" || key === "d";

@@ -33,6 +33,7 @@
         </div>
       </div>
       <nav>
+        <button id="exportBtn" type="button">导出</button>
         <a href="/table">Table 视图</a>
       </nav>
     </header>
@@ -61,6 +62,27 @@
         </div>
       </div>
     </main>
+
+    <div id="exportModal" class="floatPanel" hidden>
+      <div class="floatPanelHeader">
+        <div>导出 TXT</div>
+        <button id="exportClose" type="button">关闭</button>
+      </div>
+
+      <div class="floatPanelControls small">
+        <label style="display: inline-flex; gap: 8px; align-items: center;">
+          导出范围
+          <select id="exportMode">
+            <option value="vocab">生词</option>
+            <option value="mastered">已掌握</option>
+          </select>
+        </label>
+        <button id="exportDownload" type="button">下载 .txt</button>
+      </div>
+
+      <textarea id="exportText" class="floatPanelTextarea" readonly></textarea>
+      <div class="small" style="margin-top: 8px;">仅导出单词本体，每行一个。</div>
+    </div>
 
     <script src="/app_card.js" type="module"></script>
   </body>
